@@ -55,19 +55,15 @@ export class RankPresenter {
     if (view === "main") {
       embeds = this.mainEmbeds(await this.loadMainData(brawlhallaId));
     } else if (view === "2v2") {
-      const [player, teamsResponse] = await Promise.all([
-        this.api.getPlayerStats(brawlhallaId, "all"),
-        this.api.getPlayerTeams(brawlhallaId),
-      ]);
+      const player = await this.api.getPlayerStats(brawlhallaId, "all");
+      const teamsResponse = await this.api.getPlayerTeams(brawlhallaId);
       const teams = sortTeams(teamsResponse.teams.ranked_2v2);
       pageCount = Math.max(1, Math.ceil(teams.length / TEAMS_PER_PAGE));
       page = clampPage(requestedPage, pageCount);
       embeds = [this.teamsEmbed(player, teams, page)];
     } else {
-      const [player, ranked] = await Promise.all([
-        this.api.getPlayerStats(brawlhallaId, "all"),
-        this.getRankedOrNull(brawlhallaId, "ranked_1v1"),
-      ]);
+      const player = await this.api.getPlayerStats(brawlhallaId, "all");
+      const ranked = await this.getRankedOrNull(brawlhallaId, "ranked_1v1");
       const rankedLegends = [...(ranked?.legends ?? [])].sort(
         (a, b) => (b.rating ?? 0) - (a.rating ?? 0),
       );
@@ -86,6 +82,10 @@ export class RankPresenter {
   }
 
   private async loadMainData(brawlhallaId: number): Promise<MainRankedData> {
+    // The Brawlhalla backend can return a false 404 for the base profile when
+    // several endpoints for the same player arrive together. Load the required
+    // profile first; the remaining sections are optional and may safely follow.
+    const player = await this.api.getPlayerStats(brawlhallaId, "all");
     const ranked1v1Promise = this.getRankedOrNull(brawlhallaId, "ranked_1v1");
     const rankedRotatingPromise = this.getRankedOrNull(brawlhallaId, "ranked_3v3");
     const ranked1v1EntryPromise = ranked1v1Promise.then((ranked) =>
@@ -96,7 +96,6 @@ export class RankPresenter {
     );
 
     const [
-      player,
       ranked1v1,
       rankedRotating,
       teamsResponse,
@@ -104,7 +103,6 @@ export class RankPresenter {
       ranked1v1Entry,
       rankedRotatingEntry,
     ] = await Promise.all([
-      this.api.getPlayerStats(brawlhallaId, "all"),
       ranked1v1Promise,
       rankedRotatingPromise,
       this.api.getPlayerTeams(brawlhallaId),

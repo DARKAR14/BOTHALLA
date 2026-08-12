@@ -103,6 +103,38 @@ describe("RankPresenter", () => {
     expect(embed.timestamp).toBeUndefined();
     expect(payload.components?.[0]!.toJSON().components[1]?.disabled).toBe(true);
   });
+
+  it("carga el perfil requerido antes de consultar los apartados opcionales", async () => {
+    const calls: string[] = [];
+    let releaseProfile!: () => void;
+    const profilePending = new Promise<void>((resolve) => { releaseProfile = resolve; });
+    const api = {
+      getPlayerStats: vi.fn(async (_id: number, mode: string) => {
+        calls.push(mode);
+        if (mode === "all") {
+          await profilePending;
+          return allPlayer;
+        }
+        return mode === "ranked_1v1" ? ranked1v1 : ranked3v3;
+      }),
+      getPlayerTeams: vi.fn(async () => { calls.push("teams"); return { teams: { ranked_2v2: [] } }; }),
+      getPlayerGuild: vi.fn(async () => { calls.push("guild"); return { guild: null }; }),
+      findRankingByPlayer: vi.fn().mockResolvedValue(undefined),
+    } as unknown as BrawlhallaClient;
+    const presenter = new RankPresenter(
+      api,
+      { get: vi.fn() } as unknown as LegendCatalog,
+      { rankMention: vi.fn(), regionMention: vi.fn() } as unknown as ApplicationEmojiService,
+    );
+
+    const rendering = presenter.render(6_485_815, "main", "discord-user");
+    await Promise.resolve();
+    expect(calls).toEqual(["all"]);
+
+    releaseProfile();
+    await rendering;
+    expect(calls.slice(1)).toEqual(expect.arrayContaining(["ranked_1v1", "ranked_3v3", "teams", "guild"]));
+  });
 });
 
 function createPresenter(): RankPresenter {
