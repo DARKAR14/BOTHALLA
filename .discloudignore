@@ -1,0 +1,12 @@
+.git
+.github
+.agents
+.codex
+.env
+cloudflare-worker
+node_modules
+coverage
+src
+assets
+*.log
+*.zip

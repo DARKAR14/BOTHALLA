@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: bothalla
+    runtime: node
+    plan: free
+    region: virginia
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healt
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 24.7.0
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DEVELOPER_IDS
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        value: bothalla
+      - key: BRAWLHALLA_API_URL
+        value: https://api.brawlhalla.com/v1
+      - key: LOG_LEVEL
+        value: info
