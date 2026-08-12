@@ -18,6 +18,7 @@ const environmentSchema = z.object({
   MONGODB_URI: z.string().min(1, "Falta MONGODB_URI"),
   MONGODB_DATABASE: z.string().min(1).default("bothalla"),
   BRAWLHALLA_API_URL: z.url().default("https://api.brawlhalla.com/v1"),
+  HEALTHCHECK_URL: z.url().optional(),
   PORT: z.coerce.number().int().positive().max(65_535).default(10_000),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });
@@ -37,5 +38,6 @@ export function loadConfig(): AppConfig {
   return {
     ...result.data,
     BRAWLHALLA_API_URL: result.data.BRAWLHALLA_API_URL.replace(/\/+$/, ""),
+    HEALTHCHECK_URL: result.data.HEALTHCHECK_URL?.replace(/\/+$/, ""),
   };
 }

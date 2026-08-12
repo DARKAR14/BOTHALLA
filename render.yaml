@@ -21,5 +21,7 @@ services:
         value: bothalla
       - key: BRAWLHALLA_API_URL
         value: https://api.brawlhalla.com/v1
+      - key: HEALTHCHECK_URL
+        sync: false
       - key: LOG_LEVEL
         value: info

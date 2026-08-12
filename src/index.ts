@@ -10,6 +10,7 @@ import { ProfileRepository } from "./database/profiles.js";
 import { Logger } from "./logger.js";
 import { ApplicationEmojiService } from "./services/application-emojis.js";
 import { GuildSessionIndex } from "./services/guild-index.js";
+import { startHealthPinger } from "./services/health-pinger.js";
 import { LegendCatalog } from "./services/legend-catalog.js";
 import { ClanPresenter } from "./ui/clan-presenter.js";
 import { RankPresenter } from "./ui/rank-presenter.js";
@@ -38,9 +39,11 @@ const context: CommandContext = {
   developerIds: new Set(config.DEVELOPER_IDS),
 };
 let shuttingDown = false;
+let healthPingTimer: NodeJS.Timeout | undefined;
 
 async function start(): Promise<void> {
   startHealthServer();
+  healthPingTimer = startHealthPinger(config.HEALTHCHECK_URL, logger);
   const commands = await loadCommands(logger);
   const controller = new BotController(commands, context, logger);
 
@@ -114,6 +117,7 @@ function wait(milliseconds: number): Promise<void> {
 async function shutdown(signal: string): Promise<void> {
   shuttingDown = true;
   logger.info("Apagando Bothalla", { signal });
+  if (healthPingTimer) clearInterval(healthPingTimer);
   discord.destroy();
   await profiles.close().catch((error) => logger.error("No se pudo cerrar MongoDB", error));
   process.exit(0);

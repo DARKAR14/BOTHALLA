@@ -140,7 +140,7 @@ La URL de la API se lee desde `BRAWLHALLA_API_URL`; usa `https://api.brawlhalla.
 
 El archivo `render.yaml` despliega el bot como Web Service gratuito en Virginia. Configura en Render los secretos `DISCORD_TOKEN`, `MONGODB_URI` y, si corresponde, `DEVELOPER_IDS`; el resto ya tiene valores definidos en el Blueprint.
 
-El proceso escucha en `0.0.0.0:$PORT` y expone `GET /healt`, que responde `200` sin consultar Discord, MongoDB ni Brawlhalla. Puedes configurar un monitor externo para llamar `https://TU-SERVICIO.onrender.com/healt` cada 13 minutos.
+El proceso escucha en `0.0.0.0:$PORT` y expone `GET /healt`, que responde `200` sin consultar Discord, MongoDB ni Brawlhalla. Configura `HEALTHCHECK_URL=https://TU-SERVICIO.onrender.com/healt`; el propio bot consultará esa URL cada 13 minutos, comenzando 13 minutos después del arranque.
 
 Render apaga los Web Services gratuitos después de 15 minutos sin tráfico entrante. Su health check interno comprueba disponibilidad, pero para mantenerlo despierto necesitas el monitor externo de 13 minutos.
 
