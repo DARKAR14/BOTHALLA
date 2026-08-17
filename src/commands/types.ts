@@ -28,3 +28,11 @@ export interface BotCommand {
   };
   execute(interaction: ChatInputCommandInteraction, context: CommandContext): Promise<void>;
 }
+
+export interface AdminSubcommand {
+  access: "admin";
+  commandName: string;
+  subcommandName: string;
+  apply(command: SlashCommandBuilder): void;
+  execute(interaction: ChatInputCommandInteraction, context: CommandContext): Promise<void>;
+}

@@ -15,4 +15,11 @@ describe("command loader", () => {
       expect(command.execute).toBeTypeOf("function");
     }
   });
+
+  it("fusiona el subcomando administrativo /rank roles sin duplicar /rank", async () => {
+    const commands = await loadCommands();
+    const rank = commands.get("rank")!.data.toJSON();
+    expect(rank.options?.map((option) => option.name)).toContain("roles");
+    expect(commands.filter((_command, name) => name === "rank")).toHaveLength(1);
+  });
 });

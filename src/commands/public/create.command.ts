@@ -14,7 +14,7 @@ const command: BotCommand = {
   access: "public",
   data: new SlashCommandBuilder()
     .setName("create")
-    .setDescription("Crea o actualiza tu perfil de Bothalla")
+    .setDescription("Crea o actualiza tu perfil del bot")
     .addIntegerOption((option) =>
       option
         .setName("brawlhalla_id")

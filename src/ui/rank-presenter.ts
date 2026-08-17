@@ -63,9 +63,8 @@ export class RankPresenter {
       embeds = [this.teamsEmbed(player, teams, page)];
     } else {
       const player = await this.api.getPlayerStats(brawlhallaId, "all");
-      const ranked = await this.getRankedOrNull(brawlhallaId, "ranked_1v1");
-      const rankedLegends = [...(ranked?.legends ?? [])].sort(
-        (a, b) => (b.rating ?? 0) - (a.rating ?? 0),
+      const rankedLegends = [...player.legends].sort(
+        (a, b) => (b.games ?? 0) - (a.games ?? 0),
       );
       pageCount = Math.max(1, Math.ceil(rankedLegends.length / LEGENDS_PER_PAGE));
       page = clampPage(requestedPage, pageCount);
@@ -258,24 +257,22 @@ export class RankPresenter {
   ): EmbedBuilder {
     const items = legends.slice(page * LEGENDS_PER_PAGE, (page + 1) * LEGENDS_PER_PAGE);
     const embed = new EmbedBuilder()
-      .setColor(rankColor(items[0]?.tier))
-      .setTitle(`Leyendas ranked de ${player.name}`)
+      .setColor(rankColor(player.tier))
+      .setTitle(`Leyendas más jugadas de ${player.name}`)
       .setDescription(
         items.length
-          ? `Brawlhalla ID **${player.brawlhalla_id}** · ordenadas por Elo actual.`
-          : "No hay estadísticas Ranked 1v1 por leyenda en la temporada actual.",
+          ? `Brawlhalla ID **${player.brawlhalla_id}** · incluye partidas 1v1, 2v2, 3v3 y otros modos registrados por la API.`
+          : "No hay partidas registradas por leyenda para esta cuenta.",
       );
 
     for (const legend of items) {
       const data = this.legends.get(legend.legend_id);
       const name = data?.bio_name ?? `Leyenda #${legend.legend_id}`;
       const emoji = this.emojis.legendMention(name);
-      const rankEmoji = this.emojis.rankMention(legend.tier);
       const losses = Math.max((legend.games ?? 0) - (legend.wins ?? 0), 0);
       embed.addFields({
-        name: `${emoji ? `${emoji} ` : ""}${name} · ${rankEmoji ? `${rankEmoji} ` : ""}${legend.tier ?? "Sin rango"}`,
+        name: `${emoji ? `${emoji} ` : ""}${name}`,
         value: [
-          `Elo **${formatNumber(legend.rating)}** · pico **${formatNumber(legend.peak_rating)}**`,
           `**${formatNumber(legend.wins)}** victorias · **${formatNumber(losses)}** derrotas`,
           `**${formatNumber(legend.games)}** partidas · ${winRate(legend.wins, legend.games)}`,
         ].join("\n"),

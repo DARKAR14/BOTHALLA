@@ -1,13 +1,15 @@
 import { MessageFlags } from "discord.js";
 import { describe, expect, it, vi } from "vitest";
 import command from "./public/rank.command.js";
+import { loadCommands } from "./loader.js";
 import type { CommandContext } from "./types.js";
 
 describe("/rank self", () => {
-  it("registra roles como subcomando del comando público", () => {
-    const json = command.data.toJSON();
+  it("fusiona roles desde la carpeta admin sin duplicar el comando público", async () => {
+    const commands = await loadCommands();
+    const json = commands.get("rank")!.data.toJSON();
     expect(json.options?.some((option) => option.name === "roles")).toBe(true);
-    expect(command.access).toBe("public");
+    expect(commands.get("rank")!.access).toBe("public");
   });
 
   it("responde en privado y abre la portada ranked", async () => {

@@ -1,6 +1,5 @@
 import {
   PermissionFlagsBits,
-  type ChatInputCommandInteraction,
   type Guild,
   type GuildMember,
   type Role,
@@ -31,18 +30,6 @@ export interface RankRoleSyncResult {
   assigned: Role;
   removed: Role[];
   unchanged: boolean;
-}
-
-export async function mayConfigureRankRoles(
-  interaction: ChatInputCommandInteraction,
-  developerIds: ReadonlySet<string>,
-): Promise<boolean> {
-  if (developerIds.has(interaction.user.id)) return true;
-  if (interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) return true;
-  if (!interaction.guild) return false;
-
-  const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => undefined);
-  return Boolean(member?.permissions.has(PermissionFlagsBits.Administrator));
 }
 
 export function rankedRoleNameFromTier(tier: string | null | undefined): RankedRoleName | undefined {
@@ -77,7 +64,7 @@ export async function ensureRankRoles(
     .find((role) => role && !role.editable);
   if (blocked) {
     throw new Error(
-      `No puedo corregir ${blocked.name} porque está por encima del rol de Bothalla. Mueve ese rol debajo del bot y ejecuta /rank roles otra vez.`,
+      `No puedo corregir ${blocked.name} porque está por encima del rol del bot. Mueve ese rol debajo del bot y ejecuta /rank roles otra vez.`,
     );
   }
 
@@ -125,7 +112,7 @@ export async function ensureRankRoles(
   }
   if (ordered.some((role) => !role.editable)) {
     throw new Error(
-      "No puedo colocar todos los rangos debajo del bot por la jerarquía actual. Mueve el rol de Bothalla por encima de los rangos y vuelve a intentarlo.",
+      "No puedo colocar todos los rangos debajo del bot por la jerarquía actual. Mueve el rol del bot por encima de los rangos y vuelve a intentarlo.",
     );
   }
 
@@ -175,7 +162,7 @@ export async function syncMemberRankRole(
   }
   if (!assigned.editable) {
     throw new Error(
-      `No puedo asignar ${rank} porque está por encima del rol de Bothalla. Ajusta la jerarquía del servidor.`,
+      `No puedo asignar ${rank} porque está por encima del rol del bot. Ajusta la jerarquía del servidor.`,
     );
   }
 
@@ -183,7 +170,7 @@ export async function syncMemberRankRole(
   const blocked = stale.find((role) => !role.editable);
   if (blocked) {
     throw new Error(
-      `No puedo retirar el rol ${blocked.name} por la jerarquía del servidor. Coloca el rol de Bothalla por encima de todos los rangos.`,
+      `No puedo retirar el rol ${blocked.name} por la jerarquía del servidor. Coloca el rol del bot por encima de todos los rangos.`,
     );
   }
 

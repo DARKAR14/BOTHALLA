@@ -112,7 +112,7 @@ export function clanSelection(
     embeds: [
       new EmbedBuilder()
         .setColor(COLORS.brand)
-        .setTitle("Clanes conocidos por Bothalla")
+        .setTitle("Clanes conocidos por el bot")
         .setDescription("Selecciona un clan del índice temporal de esta sesión."),
     ],
     components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)],

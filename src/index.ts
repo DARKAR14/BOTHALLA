@@ -116,7 +116,7 @@ function wait(milliseconds: number): Promise<void> {
 
 async function shutdown(signal: string): Promise<void> {
   shuttingDown = true;
-  logger.info("Apagando Bothalla", { signal });
+  logger.info("Apagando el bot", { signal });
   if (healthPingTimer) clearInterval(healthPingTimer);
   discord.destroy();
   await profiles.close().catch((error) => logger.error("No se pudo cerrar MongoDB", error));
@@ -127,6 +127,6 @@ process.once("SIGINT", () => void shutdown("SIGINT"));
 process.once("SIGTERM", () => void shutdown("SIGTERM"));
 
 start().catch((error) => {
-  logger.error("Bothalla no pudo iniciar", error);
+  logger.error("El bot no pudo iniciar", error);
   process.exitCode = 1;
 });

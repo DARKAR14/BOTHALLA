@@ -104,6 +104,16 @@ describe("RankPresenter", () => {
     expect(payload.components?.[0]!.toJSON().components[1]?.disabled).toBe(true);
   });
 
+  it("ordena Leyendas por partidas totales y no solo por Ranked 1v1", async () => {
+    const presenter = createPresenter();
+    const payload = await presenter.render(6_485_815, "legends", "discord-user");
+    const embed = (payload.embeds?.[0] as EmbedBuilder).toJSON();
+
+    expect(embed.title).toBe("Leyendas más jugadas de DARKAR14");
+    expect(embed.description).toContain("2v2");
+    expect(embed.fields?.[0]?.value).toContain("**10.000** partidas");
+  });
+
   it("carga el perfil requerido antes de consultar los apartados opcionales", async () => {
     const calls: string[] = [];
     let releaseProfile!: () => void;

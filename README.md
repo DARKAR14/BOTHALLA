@@ -68,7 +68,7 @@ Instala la aplicación con los scopes `bot` y `applications.commands`. Para `/ra
    npm run dev
    ```
 
-   Al iniciar, Bothalla escanea recursivamente `src/commands/public` y `src/commands/private`, muestra en el log cuántos módulos públicos y privados encontró y sincroniza una única copia global. También elimina automáticamente las copias antiguas por servidor para evitar que Discord muestre cada comando dos veces. No requiere IDs manuales ni reiniciar el cliente de Discord.
+   Al iniciar, el bot escanea recursivamente `src/commands/public`, `src/commands/admin` y `src/commands/private`, fusiona los subcomandos administrativos con su comando raíz y sincroniza una única copia global. También elimina automáticamente las copias antiguas por servidor para evitar que Discord muestre cada comando dos veces. No requiere IDs manuales ni reiniciar el cliente de Discord.
 
    Discord inicia y registra los comandos aunque MongoDB esté temporalmente inaccesible. La conexión a Mongo se reintenta en segundo plano cada 15–60 segundos; durante ese tiempo solo fallarán con un mensaje los comandos que necesitan perfiles vinculados.
 

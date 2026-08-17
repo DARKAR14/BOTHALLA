@@ -60,7 +60,7 @@ export class BotController {
     }
     if (command.access === "developer" && !this.context.developerIds.has(interaction.user.id)) {
       await interaction.reply({
-        content: "Este comando es privado y solo está disponible para los desarrolladores configurados de Bothalla.",
+        content: "Este comando es privado y solo está disponible para los desarrolladores configurados del bot.",
         flags: MessageFlags.Ephemeral,
       });
       return;

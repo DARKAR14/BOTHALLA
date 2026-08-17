@@ -1,11 +1,12 @@
 import { readdir } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { Collection } from "discord.js";
+import { Collection, PermissionFlagsBits, type ChatInputCommandInteraction, type SlashCommandBuilder } from "discord.js";
 import type { Logger } from "../logger.js";
-import type { BotCommand } from "./types.js";
+import type { AdminSubcommand, BotCommand } from "./types.js";
 
 const commandFilePattern = /\.command\.(?:js|ts)$/;
+const adminFilePattern = /\.admin\.(?:js|ts)$/;
 
 export async function loadCommands(logger?: Logger): Promise<Collection<string, BotCommand>> {
   const commandsDirectory = dirname(fileURLToPath(import.meta.url));
@@ -46,6 +47,34 @@ export async function loadCommands(logger?: Logger): Promise<Collection<string, 
     commands.set(command.data.name, command);
   }
 
+  const adminFiles = (await findFiles(commandsDirectory, adminFilePattern)).sort();
+  for (const file of adminFiles) {
+    const relativeFile = relative(commandsDirectory, file);
+    if (relativeFile.split(sep)[0] !== "admin") {
+      throw new Error(`El módulo administrativo ${relativeFile} debe vivir en commands/admin.`);
+    }
+    const imported = await import(pathToFileURL(file).href) as { default?: unknown };
+    const fragment = imported.default;
+    if (!isAdminSubcommand(fragment)) {
+      throw new Error(`El archivo ${relativeFile} no exporta un subcomando administrativo válido.`);
+    }
+    const parent = commands.get(fragment.commandName);
+    if (!parent) {
+      throw new Error(`${relativeFile} intenta extender /${fragment.commandName}, pero ese comando público no existe.`);
+    }
+    fragment.apply(parent.data as SlashCommandBuilder);
+    const previousExecute = parent.execute;
+    parent.execute = async (interaction, context) => {
+      if (interaction.options.getSubcommand(false) !== fragment.subcommandName) {
+        return previousExecute(interaction, context);
+      }
+      if (!await mayUseAdminCommand(interaction)) {
+        throw new Error("Solo un administrador del servidor puede usar este comando.");
+      }
+      return fragment.execute(interaction, context);
+    };
+  }
+
   if (commands.size === 0) {
     throw new Error(`No se encontraron archivos *.command en ${commandsDirectory}.`);
   }
@@ -54,19 +83,41 @@ export async function loadCommands(logger?: Logger): Promise<Collection<string, 
     count: commands.size,
     public: commands.filter((command) => command.access === "public").size,
     private: commands.filter((command) => command.access === "developer").size,
+    admin: adminFiles.length,
     commands: [...commands.keys()].map((name) => `/${name}`),
   });
   return commands;
 }
 
 async function findCommandFiles(directory: string): Promise<string[]> {
+  return findFiles(directory, commandFilePattern);
+}
+
+async function findFiles(directory: string, pattern: RegExp): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
   const nested = await Promise.all(entries.map(async (entry) => {
     const path = join(directory, entry.name);
-    if (entry.isDirectory()) return findCommandFiles(path);
-    return entry.isFile() && commandFilePattern.test(entry.name) ? [path] : [];
+    if (entry.isDirectory()) return findFiles(path, pattern);
+    return entry.isFile() && pattern.test(entry.name) ? [path] : [];
   }));
   return nested.flat();
+}
+
+function isAdminSubcommand(value: unknown): value is AdminSubcommand {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<AdminSubcommand>;
+  return candidate.access === "admin"
+    && typeof candidate.commandName === "string"
+    && typeof candidate.subcommandName === "string"
+    && typeof candidate.apply === "function"
+    && typeof candidate.execute === "function";
+}
+
+async function mayUseAdminCommand(interaction: ChatInputCommandInteraction): Promise<boolean> {
+  if (interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) return true;
+  if (!interaction.guild) return false;
+  const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => undefined);
+  return Boolean(member?.permissions.has(PermissionFlagsBits.Administrator));
 }
 
 function isBotCommand(value: unknown): value is BotCommand {

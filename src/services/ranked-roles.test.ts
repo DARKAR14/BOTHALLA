@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   RANK_ROLE_DEFINITIONS,
   ensureRankRoles,
-  mayConfigureRankRoles,
   rankedRoleNameFromTier,
   syncMemberRankRole,
 } from "./ranked-roles.js";
@@ -21,31 +20,6 @@ describe("ranked roles", () => {
     ["Master", undefined],
   ])("convierte el tier %s al rol base", (tier, expected) => {
     expect(rankedRoleNameFromTier(tier)).toBe(expected);
-  });
-
-  it("acepta a desarrolladores o administradores", async () => {
-    const base = { user: { id: "developer" } };
-    await expect(mayConfigureRankRoles(base as never, new Set(["developer"]))).resolves.toBe(true);
-    await expect(mayConfigureRankRoles({
-      user: { id: "admin" },
-      memberPermissions: { has: vi.fn().mockReturnValue(true) },
-    } as never, new Set())).resolves.toBe(true);
-    await expect(mayConfigureRankRoles({
-      user: { id: "member" },
-      memberPermissions: { has: vi.fn().mockReturnValue(false) },
-    } as never, new Set())).resolves.toBe(false);
-  });
-
-  it("consulta el miembro real cuando Discord no incluye sus permisos en la interacción", async () => {
-    const has = vi.fn((permission: bigint) => permission === PermissionFlagsBits.Administrator);
-    const interaction = {
-      user: { id: "admin" },
-      memberPermissions: null,
-      guild: { members: { fetch: vi.fn().mockResolvedValue({ permissions: { has } }) } },
-    };
-
-    await expect(mayConfigureRankRoles(interaction as never, new Set())).resolves.toBe(true);
-    expect(interaction.guild.members.fetch).toHaveBeenCalledWith("admin");
   });
 
   it("conserva los roles existentes y crea únicamente los faltantes", async () => {

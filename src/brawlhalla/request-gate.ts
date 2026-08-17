@@ -26,7 +26,7 @@ export class RequestGate {
   public async run<T>(task: () => Promise<T>): Promise<T> {
     if (this.pending >= this.options.maximumPending) {
       throw new BrawlhallaApiError(
-        "Bothalla está atendiendo demasiadas consultas. Espera unos segundos e inténtalo nuevamente.",
+        "El bot está atendiendo demasiadas consultas. Espera unos segundos e inténtalo nuevamente.",
         429,
         true,
       );
