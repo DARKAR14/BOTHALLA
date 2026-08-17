@@ -29,7 +29,7 @@ const command: BotCommand = {
       if (!interaction.guild) {
         throw new Error("/rank roles solo puede usarse dentro de un servidor.");
       }
-      if (!mayConfigureRankRoles(interaction, context.developerIds)) {
+      if (!await mayConfigureRankRoles(interaction, context.developerIds)) {
         throw new Error(
           "Solo un desarrollador configurado de Bothalla o un administrador del servidor puede usar /rank roles.",
         );

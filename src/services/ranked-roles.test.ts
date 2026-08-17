@@ -23,17 +23,29 @@ describe("ranked roles", () => {
     expect(rankedRoleNameFromTier(tier)).toBe(expected);
   });
 
-  it("acepta a desarrolladores o administradores", () => {
+  it("acepta a desarrolladores o administradores", async () => {
     const base = { user: { id: "developer" } };
-    expect(mayConfigureRankRoles(base as never, new Set(["developer"]))).toBe(true);
-    expect(mayConfigureRankRoles({
+    await expect(mayConfigureRankRoles(base as never, new Set(["developer"]))).resolves.toBe(true);
+    await expect(mayConfigureRankRoles({
       user: { id: "admin" },
       memberPermissions: { has: vi.fn().mockReturnValue(true) },
-    } as never, new Set())).toBe(true);
-    expect(mayConfigureRankRoles({
+    } as never, new Set())).resolves.toBe(true);
+    await expect(mayConfigureRankRoles({
       user: { id: "member" },
       memberPermissions: { has: vi.fn().mockReturnValue(false) },
-    } as never, new Set())).toBe(false);
+    } as never, new Set())).resolves.toBe(false);
+  });
+
+  it("consulta el miembro real cuando Discord no incluye sus permisos en la interacción", async () => {
+    const has = vi.fn((permission: bigint) => permission === PermissionFlagsBits.Administrator);
+    const interaction = {
+      user: { id: "admin" },
+      memberPermissions: null,
+      guild: { members: { fetch: vi.fn().mockResolvedValue({ permissions: { has } }) } },
+    };
+
+    await expect(mayConfigureRankRoles(interaction as never, new Set())).resolves.toBe(true);
+    expect(interaction.guild.members.fetch).toHaveBeenCalledWith("admin");
   });
 
   it("conserva los roles existentes y crea únicamente los faltantes", async () => {
@@ -114,6 +126,28 @@ describe("ranked roles", () => {
         reason: "test",
       });
     }
+  });
+
+  it("no intenta reordenar cuando la jerarquía ya es correcta", async () => {
+    const roles = new Collection(
+      [...RANK_ROLE_DEFINITIONS].reverse().map(({ name }, index) => {
+        const role = fakeRole(name.toLowerCase(), name, 0, 19 - index);
+        return [role.id, role] as const;
+      }),
+    );
+    const setPositions = vi.fn();
+    const guild = {
+      members: { fetchMe: vi.fn().mockResolvedValue(botWithManageRoles()) },
+      roles: {
+        cache: roles,
+        fetch: vi.fn().mockResolvedValue(roles),
+        create: vi.fn(),
+        setPositions,
+      },
+    };
+
+    await ensureRankRoles(guild as never, "test");
+    expect(setPositions).not.toHaveBeenCalled();
   });
 
   it("retira el rango anterior antes de asignar el actual", async () => {

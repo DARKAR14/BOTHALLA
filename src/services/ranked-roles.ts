@@ -33,12 +33,16 @@ export interface RankRoleSyncResult {
   unchanged: boolean;
 }
 
-export function mayConfigureRankRoles(
+export async function mayConfigureRankRoles(
   interaction: ChatInputCommandInteraction,
   developerIds: ReadonlySet<string>,
-): boolean {
-  return developerIds.has(interaction.user.id)
-    || Boolean(interaction.memberPermissions?.has(PermissionFlagsBits.Administrator));
+): Promise<boolean> {
+  if (developerIds.has(interaction.user.id)) return true;
+  if (interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) return true;
+  if (!interaction.guild) return false;
+
+  const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => undefined);
+  return Boolean(member?.permissions.has(PermissionFlagsBits.Administrator));
 }
 
 export function rankedRoleNameFromTier(tier: string | null | undefined): RankedRoleName | undefined {
@@ -107,7 +111,8 @@ export async function ensureRankRoles(
   }
 
   await guild.roles.fetch();
-  const botRole = botMember.roles.highest;
+  const refreshedBotMember = await guild.members.fetchMe();
+  const botRole = refreshedBotMember.roles.highest;
   const ordered = [...RANK_ROLE_DEFINITIONS]
     .reverse()
     .map(({ name }) => guild.roles.cache.find((role) =>
@@ -124,10 +129,27 @@ export async function ensureRankRoles(
     );
   }
 
-  await guild.roles.setPositions(ordered.map((role, index) => ({
-    role,
-    position: botRole.position - 1 - index,
-  })));
+  if (!rolesAreImmediatelyBelow(botRole, ordered)) {
+    try {
+      await guild.roles.setPositions(ordered.map((role, index) => ({
+        role,
+        position: botRole.position - 1 - index,
+      })));
+    } catch (error) {
+      // Discord can apply the batch and still return an error if another role
+      // update happened at the same time. Only ignore it after verifying the
+      // final hierarchy from a fresh fetch.
+      const refreshedRoles = await guild.roles.fetch();
+      const refreshedBotRole = (await guild.members.fetchMe()).roles.highest;
+      const refreshedOrdered = ordered.map((role) => refreshedRoles.get(role.id)).filter(
+        (role): role is Role => Boolean(role),
+      );
+      if (refreshedOrdered.length !== ordered.length
+        || !rolesAreImmediatelyBelow(refreshedBotRole, refreshedOrdered)) {
+        throw error;
+      }
+    }
+  }
 
   return { created, existing, colorsUpdated, ordered, botRole };
 }
@@ -143,12 +165,6 @@ export async function syncMemberRankRole(
       "Necesito el permiso Administrar roles para sincronizar tu rango. Pídele a un administrador que lo active.",
     );
   }
-  if (!member.manageable) {
-    throw new Error(
-      "No puedo modificar tus roles por la jerarquía del servidor. Coloca el rol de Bothalla por encima de los roles ranked y vuelve a intentarlo.",
-    );
-  }
-
   const roles = await member.guild.roles.fetch();
   const rankedRoles = [...roles.values()].filter((role) => isRankRoleName(role.name));
   const assigned = rankedRoles.find((role) => normalizeRoleName(role.name) === normalizeRoleName(rank));
@@ -189,4 +205,8 @@ function isRankRoleName(value: string): boolean {
 
 function normalizeRoleName(value: string): string {
   return value.trim().toLocaleLowerCase("en-US");
+}
+
+function rolesAreImmediatelyBelow(botRole: Role, ordered: readonly Role[]): boolean {
+  return ordered.every((role, index) => role.position === botRole.position - 1 - index);
 }

@@ -28,7 +28,7 @@ describe("/role self", () => {
     };
     const member = {
       guild,
-      manageable: true,
+      manageable: false,
       roles: {
         cache: new Collection(),
         remove: vi.fn(),
