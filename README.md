@@ -21,6 +21,8 @@ Bot de Discord en TypeScript que consulta exclusivamente la [Brawlhalla Develope
 | `/clan mention` | Clan de un usuario de Discord vinculado. |
 | `/clan self` | Clan de tu cuenta vinculada. |
 | `/clan name` | Busca entre los clanes vistos durante el proceso actual. |
+| `/presence set` | Cambia actividad y estado del bot. Solo desarrolladores. |
+| `/presence clear` | Limpia la presencia personalizada. Solo desarrolladores. |
 
 Los paneles de estadísticas permiten cambiar entre resumen, leyendas, combate y clan. `/rank` ofrece una portada con 1v1, totales, 2v2 y rotativo, además de vistas para equipos 2v2 y leyendas. Los tiers usan los Application Emojis `Banner_Rank_*` y las regiones muestran `Flag_of_*` cuando existe una correspondencia correcta. Solo la persona que abrió el panel puede controlarlo.
 
@@ -68,11 +70,11 @@ Instala la aplicación con los scopes `bot` y `applications.commands`. Para `/ra
    npm run dev
    ```
 
-   Al iniciar, el bot escanea recursivamente `src/commands/public`, `src/commands/admin` y `src/commands/private`, fusiona los subcomandos administrativos con su comando raíz y sincroniza una única copia global. También elimina automáticamente las copias antiguas por servidor para evitar que Discord muestre cada comando dos veces. No requiere IDs manuales ni reiniciar el cliente de Discord.
+   Al iniciar, el bot escanea recursivamente `src/commands/public`, `src/commands/admin` y `src/commands/dev`, fusiona los subcomandos administrativos con su comando raíz y sincroniza una única copia global. También elimina automáticamente las copias antiguas por servidor para evitar que Discord muestre cada comando dos veces. No requiere IDs manuales ni reiniciar el cliente de Discord.
 
    Discord inicia y registra los comandos aunque MongoDB esté temporalmente inaccesible. La conexión a Mongo se reintenta en segundo plano cada 15–60 segundos; durante ese tiempo solo fallarán con un mensaje los comandos que necesitan perfiles vinculados.
 
-   Los módulos de `commands/private` solo pueden ejecutarlos los IDs separados por comas en `DEVELOPER_IDS`. `/rank roles` es un caso mixto dentro de un comando público: lo puede ejecutar un desarrollador configurado o alguien con permiso **Administrador** en ese servidor.
+   Los módulos de `commands/dev` solo pueden ejecutarlos los IDs separados por comas en `DEVELOPER_IDS`. `/rank roles` es un caso mixto dentro de un comando público: lo puede ejecutar un desarrollador configurado o alguien con permiso **Administrador** en ese servidor.
 
    `npm run dev` usa Nodemon para reiniciar el proceso cuando cambia un archivo TypeScript o JSON. `npm run deploy:commands` sigue disponible para una sincronización global manual y también obtiene la aplicación desde el token.
 
@@ -130,7 +132,7 @@ El proyecto ya incluye `discloud.config` y compila TypeScript localmente en `bui
 
 La configuración usa los 100 MB disponibles en el plan básico y `VERSION=latest`. El inicio ejecuta Node directamente con un heap máximo de 64 MB para no mantener un proceso adicional de npm consumiendo la RAM limitada. El build se genera localmente, una modalidad contemplada en la [guía oficial para bots TypeScript](https://docs.discloud.com/en/how-to-host/bots).
 
-En cada reinicio de Discloud, el bot vuelve a descubrir recursivamente los módulos `build/commands/public` y `build/commands/private` y sincroniza el conjunto actual con Discord.
+En cada reinicio, el bot vuelve a descubrir recursivamente los módulos `build/commands/public`, `build/commands/admin` y `build/commands/dev`, y sincroniza el conjunto actual con Discord.
 
 El archivo `.env` queda reservado para desarrollo local. En producción, el bot lee directamente las variables del entorno de Discloud mediante `process.env`.
 
@@ -151,7 +153,8 @@ src/
   brawlhalla/       Cliente v1.0, tipos, caché y errores
   commands/
     public/         Comandos disponibles para todos
-    private/        Comandos exclusivos de DEVELOPER_IDS
+    admin/          Subcomandos exclusivos de administradores
+    dev/            Comandos exclusivos de DEVELOPER_IDS
     loader.ts       Descubrimiento recursivo y validación de acceso
   database/         Única colección MongoDB: profiles
   scripts/          Registro de comandos y carga de emojis
@@ -181,7 +184,7 @@ const command: BotCommand = {
 export default command;
 ```
 
-El nombre debe terminar en `.command.ts` y el módulo debe exportar por defecto `{ access, data, execute }`. Usa `access: "public"` dentro de `commands/public` o `access: "developer"` dentro de `commands/private`; el cargador rechaza cualquier combinación incoherente. Tras reiniciar el bot:
+El nombre debe terminar en `.command.ts` y el módulo debe exportar por defecto `{ access, data, execute }`. Usa `access: "public"` dentro de `commands/public` o `access: "developer"` dentro de `commands/dev`; el cargador rechaza cualquier combinación incoherente. Tras reiniciar el bot:
 
 1. El cargador descubre el archivo.
 2. Valida que no tenga un nombre duplicado.

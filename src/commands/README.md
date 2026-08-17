@@ -4,7 +4,7 @@ El bot descubre recursivamente todos los archivos que terminen en `.command.ts` 
 
 - `public/`: comandos disponibles para cualquier usuario.
 - `admin/`: subcomandos que solo pueden ejecutar administradores del servidor.
-- `private/`: comandos que el controlador limita a `DEVELOPER_IDS`.
+- `dev/`: comandos que el controlador limita a `DEVELOPER_IDS`.
 
 Cada módulo debe exportar por defecto un objeto con:
 

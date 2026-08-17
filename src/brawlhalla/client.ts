@@ -22,9 +22,9 @@ import type {
 import type { Logger } from "../logger.js";
 
 const CACHE_TTL = {
-  player: 2 * 60_000,
-  ranking: 60_000,
-  guild: 2 * 60_000,
+  player: 5 * 60_000,
+  ranking: 2 * 60_000,
+  guild: 5 * 60_000,
   static: 6 * 60 * 60_000,
 };
 const REQUEST_TIMEOUT_MS = 7_000;
@@ -36,7 +36,7 @@ export class BrawlhallaClient {
   private readonly inFlight = new Map<string, Promise<unknown>>();
   private readonly gate = new RequestGate({
     maximumConcurrency: 4,
-    minimumStartIntervalMs: 175,
+    minimumStartIntervalMs: 100,
     maximumPending: 60,
   });
 

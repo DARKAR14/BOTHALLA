@@ -142,12 +142,12 @@ export class ClanPresenter {
   ): ActionRowBuilder<ButtonBuilder> {
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
-        .setCustomId(componentId("clan", "members", ownerId, guildId, page - 1))
+        .setCustomId(`${componentId("clan", "members", ownerId, guildId, page - 1)}:previous`)
         .setLabel("Anterior")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(page === 0),
       new ButtonBuilder()
-        .setCustomId(componentId("clan", "members", ownerId, guildId, page + 1))
+        .setCustomId(`${componentId("clan", "members", ownerId, guildId, page + 1)}:next`)
         .setLabel("Siguiente")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(page >= pageCount - 1),

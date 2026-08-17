@@ -16,14 +16,14 @@ export async function loadCommands(logger?: Logger): Promise<Collection<string, 
   for (const file of files) {
     const relativeFile = relative(commandsDirectory, file);
     const category = relativeFile.split(sep)[0];
-    const expectedAccess = category === "private"
+    const expectedAccess = category === "dev"
       ? "developer"
       : category === "public"
         ? "public"
         : undefined;
     if (!expectedAccess) {
       throw new Error(
-        `El comando ${relativeFile} debe vivir en commands/public o commands/private.`,
+        `El comando ${relativeFile} debe vivir en commands/public o commands/dev.`,
       );
     }
 
@@ -82,11 +82,43 @@ export async function loadCommands(logger?: Logger): Promise<Collection<string, 
   logger?.info("Comandos descubiertos", {
     count: commands.size,
     public: commands.filter((command) => command.access === "public").size,
-    private: commands.filter((command) => command.access === "developer").size,
+    dev: commands.filter((command) => command.access === "developer").size,
     admin: adminFiles.length,
     commands: [...commands.keys()].map((name) => `/${name}`),
   });
+  if (logger) {
+    console.log(formatCommandTable(commands, adminFiles));
+  }
   return commands;
+}
+
+export function formatCommandTable(
+  commands: Collection<string, BotCommand>,
+  adminFiles: readonly string[] = [],
+): string {
+  const rows: Array<[string, string]> = [
+    ...commands
+      .filter((command) => command.access === "public")
+      .map((command): [string, string] => ["PUBLIC", `/${command.data.name}`]),
+    ...adminFiles.map((file): [string, string] => ["ADMIN", adminCommandLabel(file)]),
+    ...commands
+      .filter((command) => command.access === "developer")
+      .map((command): [string, string] => ["DEV", `/${command.data.name}`]),
+  ].sort(([accessA, commandA], [accessB, commandB]) =>
+    accessA.localeCompare(accessB) || commandA.localeCompare(commandB));
+  const headings: [string, string] = ["ACCESO", "COMANDO"];
+  const accessWidth = Math.max(headings[0].length, ...rows.map(([access]) => access.length));
+  const commandWidth = Math.max(headings[1].length, ...rows.map(([, command]) => command.length));
+  const border = `+${"-".repeat(accessWidth + 2)}+${"-".repeat(commandWidth + 2)}+`;
+  const line = ([access, command]: readonly [string, string]) =>
+    `| ${access.padEnd(accessWidth)} | ${command.padEnd(commandWidth)} |`;
+  return ["\nComandos activos", border, line(headings), border, ...rows.map(line), border].join("\n");
+}
+
+function adminCommandLabel(file: string): string {
+  const base = file.split(/[\\/]/).at(-1) ?? file;
+  const [command, subcommand] = base.replace(/\.admin\.(?:js|ts)$/, "").split("-");
+  return `/${command}${subcommand ? ` ${subcommand}` : ""}`;
 }
 
 async function findCommandFiles(directory: string): Promise<string[]> {

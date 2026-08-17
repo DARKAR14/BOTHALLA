@@ -22,9 +22,9 @@ describe("command registry", () => {
     expect(set).toHaveBeenCalledOnce();
     expect(guildSet).toHaveBeenCalledOnce();
     expect(guildSet).toHaveBeenCalledWith([]);
-    expect(set.mock.calls[0]?.[0]).toHaveLength(5);
+    expect(set.mock.calls[0]?.[0]).toHaveLength(6);
     expect(result).toEqual({
-      count: 5,
+      count: 6,
       scope: "global",
       guildsCleaned: 1,
     });

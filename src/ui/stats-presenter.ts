@@ -214,12 +214,12 @@ export class StatsPresenter {
   ): ActionRowBuilder<ButtonBuilder> {
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
-        .setCustomId(componentId("stats", "legends", ownerId, brawlhallaId, page - 1))
+        .setCustomId(`${componentId("stats", "legends", ownerId, brawlhallaId, page - 1)}:previous`)
         .setLabel("Anterior")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(page === 0),
       new ButtonBuilder()
-        .setCustomId(componentId("stats", "legends", ownerId, brawlhallaId, page + 1))
+        .setCustomId(`${componentId("stats", "legends", ownerId, brawlhallaId, page + 1)}:next`)
         .setLabel("Siguiente")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(page >= pageCount - 1),

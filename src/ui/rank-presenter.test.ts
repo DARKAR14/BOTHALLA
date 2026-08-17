@@ -114,6 +114,13 @@ describe("RankPresenter", () => {
     expect(embed.fields?.[0]?.value).toContain("**10.000** partidas");
   });
 
+  it("mantiene únicos los custom_id al avanzar páginas de Leyendas", async () => {
+    const presenter = createPresenter({ legendCount: 14 });
+    const payload = await presenter.render(6_485_815, "legends", "discord-user", 1);
+    const ids = payload.components!.flatMap((row) => row.toJSON().components.map((button) => button.custom_id));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("carga el perfil requerido antes de consultar los apartados opcionales", async () => {
     const calls: string[] = [];
     let releaseProfile!: () => void;
@@ -147,12 +154,20 @@ describe("RankPresenter", () => {
   });
 });
 
-function createPresenter(): RankPresenter {
+function createPresenter(options: { legendCount?: number } = {}): RankPresenter {
+  const player = options.legendCount
+    ? { ...allPlayer, legends: Array.from({ length: options.legendCount }, (_, index) => ({
+      legend_id: index + 1,
+      games: options.legendCount! - index,
+      wins: 1,
+      match_time: 60,
+    })) }
+    : allPlayer;
   const api = {
     getPlayerStats: vi.fn(async (_id: number, mode: string) => {
       if (mode === "ranked_1v1") return ranked1v1;
       if (mode === "ranked_3v3") return ranked3v3;
-      return allPlayer;
+      return player;
     }),
     getPlayerTeams: vi.fn().mockResolvedValue({
       brawlhalla_id: 6_485_815,
